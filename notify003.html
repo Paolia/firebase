@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>監視カメラアプリ</title>
+  <style>
+    #output li {
+      background: #f7fb04;
+      width: 240px;
+      padding: 2px;
+      margin: 4px;
+      font-weight: 600;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>監視カメラ</h1>
+
+  <ul id="output"></ul>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script>
+    // 日時をいい感じの形式にする関数
+    function convertTimestampToDatetime(timestamp) {
+      const _d = timestamp ? new Date(timestamp * 1000) : new Date();
+      const Y = _d.getFullYear();
+      const m = (_d.getMonth() + 1).toString().padStart(2, '0');
+      const d = _d.getDate().toString().padStart(2, '0');
+      const H = _d.getHours().toString().padStart(2, '0');
+      const i = _d.getMinutes().toString().padStart(2, '0');
+      const s = _d.getSeconds().toString().padStart(2, '0');
+      return `${Y}/${m}/${d} ${H}:${i}:${s}`;
+    }
+  </script>
+  <!-- 以下にfirebaseのコードを貼り付けよう -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      query,
+      orderBy,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // 認証情報
+  const firebaseConfig = {
+    apiKey: "ひみつ",
+    authDomain: "ひみつ",
+    databaseURL:"ひみつ",
+    projectId: "ひみつ",
+    storageBucket: "ひみつ",
+    messagingSenderId: "ひみつ",
+    appId: "ひみつ",
+  };
+
+    // プロジェクトに接続
+    const app = initializeApp(firebaseConfig);
+    // DBに接続
+    const db = getFirestore(app);
+
+    // DBへデータを送信する処理
+    $("#send").on("click", function () {
+      // オブジェクト形式にして送信する    
+      const postData = {
+        name: $("#name").val(),
+        text: $("#text").val(),
+        time: serverTimestamp()
+      };
+      addDoc(collection(db, "environment"), postData);
+      $("#text").val("");
+    });
+
+    const q = query(collection(db, "environment"), orderBy("time")); 
+    onSnapshot(q, (querySnapshot) => {
+      const documents = []; 
+      querySnapshot.docs.forEach(function (doc) {
+        const document = {
+          id: doc.id,
+          data: doc.data(),
+        };
+        documents.push(document);
+      });
+
+    // 以下画面表示のための処理
+    const htmlElements = [];
+    documents.forEach(function (document) {
+      htmlElements.push(`
+        <li id="${document.id}">
+          <p>${ document.data.name + 'Warning!'}</p>
+          <p>at ${convertTimestampToDatetime(document.data.time.seconds)}</p>
+          <p>${document.data.text}</p>
+        </li>
+      `);
+    });
+    $("#output").html(htmlElements);
+    });
+  </script>
+</body>
+
+</html>
